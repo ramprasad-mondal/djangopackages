@@ -1,23 +1,25 @@
 # -*- coding: utf-8 -*-
 # Django settings
 
+from django.template.defaultfilters import slugify
 import os.path
 from os import environ
 import environ as envmax
 
 env = envmax.Env()
 
-from django.template.defaultfilters import slugify
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 DEBUG = True
+# DEBUG = False
 
 # serve media through the staticfiles app.
 SERVE_MEDIA = DEBUG
 
 INTERNAL_IPS = [
     "127.0.0.1",
+    # "*"
 ]
 
 ADMINS = [
@@ -152,7 +154,7 @@ PREREQ_APPS = [
     "django_extensions",
     "reversion",
     "webstack_django_sorting",
-    #"django_modeler",
+    # "django_modeler",
 
     'social_django',
     'floppyforms',
@@ -226,7 +228,7 @@ RESTRICT_GRID_EDITORS = True
 LOCAL_INSTALLED_APPS = []
 SUPPORTED_REPO = []
 
-########################## Site specific stuff
+# Site specific stuff
 FRAMEWORK_TITLE = "Django"
 SITE_TITLE = "Django Packages"
 
@@ -248,7 +250,11 @@ SOCIAL_AUTH_GITHUB_SECRET = GITHUB_API_SECRET
 SOCIAL_AUTH_ENABLED_BACKENDS = ('github', )
 SOCIAL_AUTH_COMPLETE_URL_NAME = 'socialauth_complete'
 SOCIAL_AUTH_ASSOCIATE_URL_NAME = 'associate_complete'
-SOCIAL_AUTH_DEFAULT_USERNAME = lambda u: slugify(u)
+
+
+def SOCIAL_AUTH_DEFAULT_USERNAME(u): return slugify(u)
+
+
 SOCIAL_AUTH_GITHUB_EXTRA_DATA = []
 SOCIAL_AUTH_CHANGE_SIGNAL_ONLY = True
 SOCIAL_AUTH_REDIRECT_IS_HTTPS = False
@@ -260,7 +266,12 @@ LOGIN_REDIRECT_URL = '/'
 
 DATABASES = {
 
-    "default": env.db("DATABASE_URL")
+    # "default": env.db("DATABASE_URL")
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(PROJECT_ROOT, 'db.sqlite3'),
+    }
+
 }
 
 
@@ -324,19 +335,19 @@ ADMIN_URL_BASE = environ.get('ADMIN_URL_BASE', r"^admin/")
 
 URL_REGEX_GITHUB = r'(?:http|https|git)://github.com/[^/]*/([^/]*)/{0,1}'
 
-########### redis setup
+# redis setup
 
 # import redis
 # from rq import Worker, Queue, Connection
 
-########### end redis setup
+# end redis setup
 
-########### crispy_forms setup
+# crispy_forms setup
 CRISPY_TEMPLATE_PACK = "bootstrap3"
-########### end crispy_forms setup
+# end crispy_forms setup
 
 
-########### LICENSES from PyPI
+# LICENSES from PyPI
 LICENSES = """License :: Aladdin Free Public License (AFPL)
 License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
 License :: DFSG approved
@@ -402,18 +413,25 @@ License :: OSI Approved :: Zope Public License
 License :: Other/Proprietary License
 License :: Public Domain
 License :: Repoze Public License""".splitlines()
-########### End LICENSES from PyPI
+# End LICENSES from PyPI
 
 
-########## GITHUB
+# GITHUB
 GITHUB_API_SECRET = environ.get('GITHUB_API_SECRET')
 GITHUB_APP_ID = environ.get('GITHUB_APP_ID')
 GITHUB_TOKEN = environ.get('GITHUB_TOKEN')
 
-########### SEKURITY
+# SEKURITY
 ALLOWED_HOSTS = ["*"]
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 20
 }
+
+GRAPH_MODELS = {
+    'all_applications': True,
+    'group_models': True,
+}
+
+# STATIC_ROOT = os.path.join(PROJECT_ROOT, 'staticfiles')
