@@ -8,6 +8,8 @@
 {% block extra_head %}
   <meta name="description" content="{{ package.repo_description }}" />
   <meta name="keywords" content="{{ package.grid_set.all|join:',' }}" />
+  <link rel="stylesheet" href="../../static/css/package.css">
+  
   {{ block.super }}
 {% endblock %}
 
@@ -168,6 +170,34 @@
             <!-- end Participants panel -->
 
         </div> <!-- end six column section -->
+
+        <div class="border border-secondary rounded">
+            <div class="col-md-8 main panel-body">
+                <h2>Comments</h2>
+                {% for comment in package_comments %}
+                <div class="media border-primary">
+                    <div class="media-body">
+                        <h4 class="media-heading">{{ comment.user_id.username }}</h4>
+                        <span class="badge">{{ comment.comment_date }}</span>
+                        <p>{{ comment.message }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% if request.user.is_authenticated %}
+                <form method="POST" action="{% url 'package' package.slug %}">
+                    {% csrf_token %}
+                    <div class="form-group ">
+                        <input type="text" name="messege" class="form-control" placeholder="Add your comment" aria-describedby="basic-addon2">
+                        <span class="form-group-btn">
+                            <button class="btn btn-default" type="submit">Post</button>
+                        </span>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
         <div class="">
             <div class="col-md-4 sidebar">
 
@@ -233,6 +263,8 @@
         </div>
 
     </div>
+
+
     <div class="row" style="padding-bottom: 20px;">
         <div class="col-sm-12">
             <h2>{% trans "Contributors" %}</h2>

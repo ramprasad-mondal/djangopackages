@@ -18,7 +18,7 @@ from django.views.decorators.http import require_POST
 from grid.models import Grid
 from homepage.models import Dpotw, Gotw
 from package.forms import PackageForm, PackageExampleForm, DocumentationForm
-from package.models import Category, Package, PackageExample
+from package.models import Category, Package, PackageExample, PackageComment
 from package.repos import get_all_repos
 
 from .utils import quote_plus
@@ -51,8 +51,8 @@ def add_package(request, template_name="package/package_form.html"):
         new_package.created_by = request.user
         new_package.last_modified_by = request.user
         new_package.save()
-        #new_package.fetch_metadata()
-        #new_package.fetch_commits()
+        # new_package.fetch_metadata()
+        # new_package.fetch_commits()
 
         return HttpResponseRedirect(reverse("package", kwargs={"slug": new_package.slug}))
 
@@ -60,7 +60,7 @@ def add_package(request, template_name="package/package_form.html"):
         "form": form,
         "repo_data": repo_data_for_js(),
         "action": "add",
-        })
+    })
 
 
 @login_required
@@ -76,7 +76,8 @@ def edit_package(request, slug, template_name="package/package_form.html"):
         modified_package = form.save()
         modified_package.last_modified_by = request.user
         modified_package.save()
-        messages.add_message(request, messages.INFO, 'Package updated successfully')
+        messages.add_message(request, messages.INFO,
+                             'Package updated successfully')
         return HttpResponseRedirect(reverse("package", kwargs={"slug": modified_package.slug}))
 
     return render(request, template_name, {
@@ -84,7 +85,7 @@ def edit_package(request, slug, template_name="package/package_form.html"):
         "package": package,
         "repo_data": repo_data_for_js(),
         "action": "edit",
-        })
+    })
 
 
 @login_required
@@ -94,7 +95,8 @@ def update_package(request, slug):
     package.fetch_metadata()
     package.fetch_commits()
     package.last_fetched = timezone.now()
-    messages.add_message(request, messages.INFO, 'Package updated successfully')
+    messages.add_message(request, messages.INFO,
+                         'Package updated successfully')
 
     return HttpResponseRedirect(reverse("package", kwargs={"slug": package.slug}))
 
@@ -104,20 +106,21 @@ def add_example(request, slug, template_name="package/add_example.html"):
 
     package = get_object_or_404(Package, slug=slug)
     new_package_example = PackageExample()
-    form = PackageExampleForm(request.POST or None, instance=new_package_example)
+    form = PackageExampleForm(request.POST or None,
+                              instance=new_package_example)
 
     if form.is_valid():
         package_example = PackageExample(package=package,
-                title=request.POST["title"],
-                url=request.POST["url"],
-                created_by=request.user)
+                                         title=request.POST["title"],
+                                         url=request.POST["url"],
+                                         created_by=request.user)
         package_example.save()
         return HttpResponseRedirect(reverse("package", kwargs={"slug": package_example.package.slug}))
 
     return render(request, template_name, {
         "form": form,
         "package": package
-        })
+    })
 
 
 @login_required
@@ -133,13 +136,14 @@ def edit_example(request, slug, id, template_name="package/edit_example.html"):
     return render(request, template_name, {
         "form": form,
         "package_example": package_example
-        })
+    })
 
 
 @login_required
 def delete_example(request, slug, id, template_name="package/delete_example.html"):
 
-    package_example = get_object_or_404(PackageExample, id=id, package__slug__iexact=slug)
+    package_example = get_object_or_404(
+        PackageExample, id=id, package__slug__iexact=slug)
     if package_example.created_by is None and not request.user.is_staff:
         raise PermissionDenied
     if package_example.created_by.id != request.user.id and not request.user.is_staff:
@@ -147,19 +151,21 @@ def delete_example(request, slug, id, template_name="package/delete_example.html
 
     return render(request, template_name, {
         "package_example": package_example
-        })
+    })
 
 
 @login_required
 @require_POST
 def confirm_delete_example(request, slug, id):
 
-    package_example = get_object_or_404(PackageExample, id=id, package__slug__iexact=slug)
+    package_example = get_object_or_404(
+        PackageExample, id=id, package__slug__iexact=slug)
     if package_example.created_by.id != request.user.id and not request.user.is_staff:
         raise PermissionDenied
 
     package_example.delete()
-    messages.add_message(request, messages.INFO, 'Package example successfully deleted.')
+    messages.add_message(request, messages.INFO,
+                         'Package example successfully deleted.')
 
     return HttpResponseRedirect(reverse("package", kwargs={"slug": slug}))
 
@@ -181,11 +187,12 @@ def package_autocomplete(request):
 
 def category(request, slug, template_name="package/category.html"):
     category = get_object_or_404(Category, slug=slug)
-    packages = category.package_set.select_related().annotate(usage_count=Count("usage")).order_by("-repo_watchers", "title")
+    packages = category.package_set.select_related().annotate(
+        usage_count=Count("usage")).order_by("-repo_watchers", "title")
     return render(request, template_name, {
         "category": category,
         "packages": packages,
-        }
+    }
     )
 
 
@@ -197,11 +204,11 @@ def ajax_package_list(request, template_name="package/ajax_package_list.html"):
         _space = "%s %s" % (settings.PACKAGINATOR_SEARCH_PREFIX, q)
         _underscore = '%s_%s' % (settings.PACKAGINATOR_SEARCH_PREFIX, q)
         packages = Package.objects.filter(
-                        Q(title__istartswith=q) |
-                        Q(title__istartswith=_dash) |
-                        Q(title__istartswith=_space) |
-                        Q(title__istartswith=_underscore)
-                    )
+            Q(title__istartswith=q) |
+            Q(title__istartswith=_dash) |
+            Q(title__istartswith=_space) |
+            Q(title__istartswith=_underscore)
+        )
 
     packages_already_added_list = []
     grid_slug = request.GET.get("grid", "")
@@ -209,12 +216,15 @@ def ajax_package_list(request, template_name="package/ajax_package_list.html"):
         grids = Grid.objects.filter(slug=grid_slug)
         if grids:
             grid = grids[0]
-            packages_already_added_list = [x['slug'] for x in grid.packages.all().values('slug')]
-            new_packages = tuple(packages.exclude(slug__in=packages_already_added_list))[:20]
+            packages_already_added_list = [x['slug']
+                                           for x in grid.packages.all().values('slug')]
+            new_packages = tuple(packages.exclude(
+                slug__in=packages_already_added_list))[:20]
             number_of_packages = len(new_packages)
             if number_of_packages < 20:
                 try:
-                    old_packages = packages.filter(slug__in=packages_already_added_list)[:20 - number_of_packages]
+                    old_packages = packages.filter(slug__in=packages_already_added_list)[
+                        :20 - number_of_packages]
                 except AssertionError:
                     old_packages = None
 
@@ -227,7 +237,7 @@ def ajax_package_list(request, template_name="package/ajax_package_list.html"):
     return render(request, template_name, {
         "packages": packages,
         'packages_already_added_list': packages_already_added_list,
-        }
+    }
     )
 
 
@@ -277,15 +287,18 @@ def usage(request, slug, action):
 
     # Intelligently determine the URL to redirect the user to based on the
     # available information.
-    next = request.GET.get('next') or request.META.get("HTTP_REFERER") or reverse("package", kwargs={"slug": package.slug})
+    next = request.GET.get('next') or request.META.get(
+        "HTTP_REFERER") or reverse("package", kwargs={"slug": package.slug})
     return HttpResponseRedirect(next)
 
 
 def python3_list(request, template_name="package/python3_list.html"):
-    packages = Package.objects.filter(version__supports_python3=True).distinct()
+    packages = Package.objects.filter(
+        version__supports_python3=True).distinct()
     packages = packages.order_by("-pypi_downloads", "-repo_watchers", "title")
 
-    values = "category, category_id, commit, commit_list, created, created_by, created_by_id, documentation_url, dpotw, grid, gridpackage, id, last_fetched, last_modified_by, last_modified_by_id, modified, packageexample, participants, pypi_downloads, pypi_url, repo_description, repo_forks, repo_url, repo_watchers, slug, title, usage, version".split(',')
+    values = "category, category_id, commit, commit_list, created, created_by, created_by_id, documentation_url, dpotw, grid, gridpackage, id, last_fetched, last_modified_by, last_modified_by_id, modified, packageexample, participants, pypi_downloads, pypi_url, repo_description, repo_forks, repo_url, repo_watchers, slug, title, usage, version".split(
+        ',')
     values = [x.strip() for x in values]
     if request.GET.get('sort') and request.GET.get('sort') not in values:
         # Some people have cached older versions of this view
@@ -298,6 +311,7 @@ def python3_list(request, template_name="package/python3_list.html"):
             "packages": packages
         }
     )
+
 
 def package_list(request, template_name="package/package_list.html"):
 
@@ -326,7 +340,18 @@ def package_list(request, template_name="package/package_list.html"):
 
 def package_detail(request, slug, template_name="package/package.html"):
 
+    if request.method == 'POST':
+        message = request.POST['messege']
+        username = request.user
+        package_name = Package.objects.get(slug=slug)
+
+        query = PackageComment(
+            message=message, user_id=username, package_id=package_name)
+        query.save()
+
     package = get_object_or_404(Package, slug=slug)
+    package_comments = PackageComment.objects.all().filter(
+        package_id=Package.objects.get(slug=slug))
     no_development = package.no_development
     try:
         if package.category == Category.objects.get(slug='projects'):
@@ -343,19 +368,21 @@ def package_detail(request, slug, template_name="package/package.html"):
         warnings = no_development
 
     if request.GET.get("message"):
-        messages.add_message(request, messages.INFO, request.GET.get("message"))
+        messages.add_message(request, messages.INFO,
+                             request.GET.get("message"))
 
     return render(request, template_name,
-            dict(
-                package=package,
-                pypi_ancient=pypi_ancient,
-                no_development=no_development,
-                pypi_no_release=pypi_no_release,
-                warnings=warnings,
-                latest_version=package.last_released(),
-                repo=package.repo
-            )
-        )
+                  dict(
+                      package=package,
+                      pypi_ancient=pypi_ancient,
+                      no_development=no_development,
+                      pypi_no_release=pypi_no_release,
+                      warnings=warnings,
+                      latest_version=package.last_released(),
+                      repo=package.repo,
+                      package_comments=package_comments,
+                  )
+                  )
 
 
 def int_or_0(value):
@@ -368,15 +395,15 @@ def int_or_0(value):
 @login_required
 def post_data(request, slug):
     # if request.method == "POST":
-        # try:
-        #     # TODO Do this this with a form, really. Duh!
-        #     package.repo_watchers = int_or_0(request.POST.get("repo_watchers"))
-        #     package.repo_forks = int_or_0(request.POST.get("repo_forks"))
-        #     package.repo_description = request.POST.get("repo_description")
-        #     package.participants = request.POST.get('contributors')
-        #     package.fetch_commits()  # also saves
-        # except Exception as e:
-        #     print e
+    # try:
+    #     # TODO Do this this with a form, really. Duh!
+    #     package.repo_watchers = int_or_0(request.POST.get("repo_watchers"))
+    #     package.repo_forks = int_or_0(request.POST.get("repo_forks"))
+    #     package.repo_description = request.POST.get("repo_description")
+    #     package.participants = request.POST.get('contributors')
+    #     package.fetch_commits()  # also saves
+    # except Exception as e:
+    #     print e
     package = get_object_or_404(Package, slug=slug)
     package.fetch_pypi_data()
     package.repo.fetch_metadata(package)
@@ -392,14 +419,15 @@ def edit_documentation(request, slug, template_name="package/documentation_form.
     form = DocumentationForm(request.POST or None, instance=package)
     if form.is_valid():
         form.save()
-        messages.add_message(request, messages.INFO, 'Package documentation updated successfully')
+        messages.add_message(request, messages.INFO,
+                             'Package documentation updated successfully')
         return redirect(package)
     return render(request, template_name,
-            dict(
-                package=package,
-                form=form
-            )
-        )
+                  dict(
+                      package=package,
+                      form=form
+                  )
+                  )
 
 
 @csrf_exempt

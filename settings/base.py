@@ -154,6 +154,7 @@ PREREQ_APPS = [
     "django_extensions",
     "reversion",
     "webstack_django_sorting",
+    "django_seed",
     # "django_modeler",
 
     'social_django',
