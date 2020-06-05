@@ -33,8 +33,10 @@ class Category(BaseModel):
     title = models.CharField(_("Title"), max_length=50)
     slug = models.SlugField(_("slug"))
     description = models.TextField(_("description"), blank=True)
-    title_plural = models.CharField(_("Title Plural"), max_length=50, blank=True)
-    show_pypi = models.BooleanField(_("Show pypi stats & version"), default=True)
+    title_plural = models.CharField(
+        _("Title Plural"), max_length=50, blank=True)
+    show_pypi = models.BooleanField(
+        _("Show pypi stats & version"), default=True)
 
     class Meta:
         ordering = ['title']
@@ -50,21 +52,29 @@ class Category(BaseModel):
 class Package(BaseModel):
 
     title = models.CharField(_("Title"), max_length=100)
-    slug = models.SlugField(_("Slug"), help_text="Enter a valid 'slug' consisting of letters, numbers, underscores or hyphens. Values will be converted to lowercase.", unique=True)
-    category = models.ForeignKey(Category, verbose_name="Installation", on_delete=models.PROTECT)
+    slug = models.SlugField(
+        _("Slug"), help_text="Enter a valid 'slug' consisting of letters, numbers, underscores or hyphens. Values will be converted to lowercase.", unique=True)
+    category = models.ForeignKey(
+        Category, verbose_name="Installation", on_delete=models.PROTECT)
     repo_description = models.TextField(_("Repo Description"), blank=True)
-    repo_url = models.URLField(_("repo URL"), help_text=repo_url_help_text, blank=True, unique=True)
+    repo_url = models.URLField(
+        _("repo URL"), help_text=repo_url_help_text, blank=True, unique=True)
     repo_watchers = models.IntegerField(_("Stars"), default=0)
     repo_forks = models.IntegerField(_("repo forks"), default=0)
-    pypi_url = models.CharField(_("PyPI slug"), max_length=255, help_text=pypi_url_help_text, blank=True, default='')
+    pypi_url = models.CharField(
+        _("PyPI slug"), max_length=255, help_text=pypi_url_help_text, blank=True, default='')
     pypi_downloads = models.IntegerField(_("Pypi downloads"), default=0)
     participants = models.TextField(_("Participants"),
-                        help_text="List of collaborats/participants on the project", blank=True)
+                                    help_text="List of collaborats/participants on the project", blank=True)
     usage = models.ManyToManyField(User, blank=True)
-    created_by = models.ForeignKey(User, blank=True, null=True, related_name="creator", on_delete=models.SET_NULL)
-    last_modified_by = models.ForeignKey(User, blank=True, null=True, related_name="modifier", on_delete=models.SET_NULL)
-    last_fetched = models.DateTimeField(blank=True, null=True, default=timezone.now)
-    documentation_url = models.URLField(_("Documentation URL"), blank=True, null=True, default="")
+    created_by = models.ForeignKey(
+        User, blank=True, null=True, related_name="creator", on_delete=models.SET_NULL)
+    last_modified_by = models.ForeignKey(
+        User, blank=True, null=True, related_name="modifier", on_delete=models.SET_NULL)
+    last_fetched = models.DateTimeField(
+        blank=True, null=True, default=timezone.now)
+    documentation_url = models.URLField(
+        _("Documentation URL"), blank=True, null=True, default="")
 
     commit_list = models.TextField(_("Commit List"), blank=True)
 
@@ -155,7 +165,8 @@ class Package(BaseModel):
         if self.pypi_url.strip() and self.pypi_url != "http://pypi.python.org/pypi/":
 
             total_downloads = 0
-            url = "https://pypi.python.org/pypi/{0}/json".format(self.pypi_name)
+            url = "https://pypi.python.org/pypi/{0}/json".format(
+                self.pypi_name)
             response = requests.get(url)
             if settings.DEBUG:
                 if response.status_code not in (200, 404):
@@ -176,7 +187,7 @@ class Package(BaseModel):
 
             # add to versions
             license = info['license']
-            if not info['license'] or not license.strip()  or 'UNKNOWN' == license.upper():
+            if not info['license'] or not license.strip() or 'UNKNOWN' == license.upper():
                 for classifier in info['classifiers']:
                     if classifier.strip().startswith('License'):
                         # Do it this way to cover people not quite following the spec
@@ -190,7 +201,7 @@ class Package(BaseModel):
 
             version.license = license
 
-            #version stuff
+            # version stuff
             try:
                 url_data = release['urls'][0]
                 version.downloads = url_data['downloads']
@@ -201,7 +212,8 @@ class Package(BaseModel):
 
             for classifier in info['classifiers']:
                 if classifier.startswith('Development Status'):
-                    version.development_status = status_choices_switch(classifier)
+                    version.development_status = status_choices_switch(
+                        classifier)
                     break
             for classifier in info['classifiers']:
                 if classifier.startswith('Programming Language :: Python :: 3'):
@@ -260,7 +272,6 @@ class Package(BaseModel):
         """ Gets data needed in API v2 calls """
         return self.last_released().pretty_status
 
-
     @property
     def pypi_ancient(self):
         release = self.last_released()
@@ -298,8 +309,10 @@ class PackageExample(BaseModel):
     package = models.ForeignKey(Package, on_delete=models.CASCADE)
     title = models.CharField(_("Title"), max_length=100)
     url = models.URLField(_("URL"))
-    active = models.BooleanField(_("Active"), default=True, help_text="Moderators have to approve links before they are provided")
-    created_by = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
+    active = models.BooleanField(
+        _("Active"), default=True, help_text="Moderators have to approve links before they are provided")
+    created_by = models.ForeignKey(
+        User, blank=True, null=True, on_delete=models.SET_NULL)
 
     class Meta:
         ordering = ['title']
@@ -318,7 +331,8 @@ class Commit(BaseModel):
 
     package = models.ForeignKey(Package, on_delete=models.CASCADE)
     commit_date = models.DateTimeField(_("Commit Date"))
-    commit_hash = models.CharField(_("Commit Hash"), help_text="Example: Git sha or SVN commit id", max_length=150, blank=True, default="")
+    commit_hash = models.CharField(
+        _("Commit Hash"), help_text="Example: Git sha or SVN commit id", max_length=150, blank=True, default="")
 
     class Meta:
         ordering = ['-commit_date']
@@ -361,14 +375,19 @@ class VersionManager(models.Manager):
 
 class Version(BaseModel):
 
-    package = models.ForeignKey(Package, blank=True, null=True, on_delete=models.CASCADE)
-    number = models.CharField(_("Version"), max_length=100, default="", blank="")
+    package = models.ForeignKey(
+        Package, blank=True, null=True, on_delete=models.CASCADE)
+    number = models.CharField(
+        _("Version"), max_length=100, default="", blank="")
     downloads = models.IntegerField(_("downloads"), default=0)
     license = models.CharField(_("license"), max_length=100)
     hidden = models.BooleanField(_("hidden"), default=False)
-    upload_time = models.DateTimeField(_("upload_time"), help_text=_("When this was uploaded to PyPI"), blank=True, null=True)
-    development_status = models.IntegerField(_("Development Status"), choices=STATUS_CHOICES, default=0)
-    supports_python3 = models.BooleanField(_("Supports Python 3"), default=False)
+    upload_time = models.DateTimeField(_("upload_time"), help_text=_(
+        "When this was uploaded to PyPI"), blank=True, null=True)
+    development_status = models.IntegerField(
+        _("Development Status"), choices=STATUS_CHOICES, default=0)
+    supports_python3 = models.BooleanField(
+        _("Supports Python 3"), default=False)
 
     objects = VersionManager()
 
@@ -401,3 +420,19 @@ class Version(BaseModel):
 
     def __str__(self):
         return "%s: %s" % (self.package.title, self.number)
+
+
+class PackageComment(BaseModel):
+    message = models.TextField(_("Comments"), blank=True, null=True)
+    user_id = models.ForeignKey(
+        User, verbose_name="Commented By", blank=True, null=True, on_delete=models.CASCADE)
+    comment_date = models.DateTimeField(
+        _("Comment Date"),  default=timezone.now)
+    package_id = models.ForeignKey(Package, on_delete=models.CASCADE)
+
+    class Meta:
+        ordering = ['-comment_date']
+        get_latest_by = 'comment_date'
+
+    def __str__(self):
+        return self.message
